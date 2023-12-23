@@ -1,0 +1,60 @@
+﻿@page "/Result"
+@using DataAccessLayer
+@inject IJSRuntime js
+
+@using UserInterface.Authentication
+@inject AuthenticationStateProvider authstateprovider
+@inject NavigationManager nav
+@using ModelLayer
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@using System.Security.Claims
+@using UserInterface.Data
+@using DataAccessLayer
+@inject NavigationManager NavigationManager
+@inject UserAccountService userAccountService
+
+@using ModelLayer
+<h1>Your results, @username!</h1>
+<div class="container">
+    <h3>Survey Results:</h3>
+    @foreach (var result in SurveyResults)
+    {
+       
+            <p><strong>Category:</strong> @result.Category</p>
+            <p><strong>Percentage:</strong> @result.Percentage%</p>
+     
+    }
+</div>
+
+@code {
+    private string username = "Guest";
+    private bool userIsAuthenticated = false;
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity.IsAuthenticated)
+        {
+            username = user.FindFirst(ClaimTypes.Name)?.Value;
+            userIsAuthenticated = true;
+        }
+    }
+    private List<Modelsurveyresult> SurveyResults = new List<Modelsurveyresult>();
+
+    protected override void OnInitialized()
+    {
+        // Load survey results for the logged-in user
+        LoadSurveyResults();
+    }
+
+    private void LoadSurveyResults()
+    {
+        DateTime currentDate = DateTime.Now; // Get the current date
+
+        // Filter survey results for the current survey based on the survey date
+        SurveyResults = DALsurveyresult.Getsurveyresult();
+
+}}

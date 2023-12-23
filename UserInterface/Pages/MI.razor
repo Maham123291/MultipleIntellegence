@@ -1,0 +1,121 @@
+﻿@page "/MI"
+@using ModelLayer
+@using UserInterface.Data
+@using DataAccessLayer
+@using Microsoft.AspNetCore.Components
+
+
+@attribute [Authorize(Roles = "admin")]
+
+<h3>USERS DATA</h3>
+
+<button @onclick="LoadData">Show User Data</button>
+
+@if (modelMIs != null && modelMIs.Any())
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Roles</th>
+                <th>User ID</th>
+                <th>Username</th>
+                <th>Password</th>
+                <th>Email</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in modelMIs)
+            {
+                <tr>
+                    <td>@item.roles</td>
+                    <td>@item.userid</td>
+                    <td>@item.username</td>
+                    <td>@item.userpass</td>
+                    <td>@item.useremail</td>
+                    <td>
+                     
+                        <button @onclick="() => DeleteUser(item.userid)">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p> </p>
+}
+
+<button @onclick="CreateNewUser">Create New User</button>
+
+@if (isCreatingNewUser)
+{
+    <h4>Create New User</h4>
+    <form>
+        <div class="form-group">
+            <label for="roles">Roles:</label>
+            <input type="text" class="form-control" id="roles" @bind="newUser.roles" />
+        </div>
+        <div class="form-group">
+            <label for="userId">User ID:</label>
+            <input type="text" class="form-control" id="userId" @bind="newUser.userid" />
+        </div>
+        <div class="form-group">
+            <label for="username">Username:</label>
+            <input type="text" class="form-control" id="username" @bind="newUser.username" />
+        </div>
+        <div class="form-group">
+            <label for="userpass">Password:</label>
+            <input type="password" class="form-control" id="userpass" @bind="newUser.userpass" />
+        </div>
+        <div class="form-group">
+            <label for="useremail">Email:</label>
+            <input type="email" class="form-control" id="useremail" @bind="newUser.useremail" />
+        </div>
+        <button type="button" class="btn btn-dark mt-3" @onclick="SaveNewUser">Save</button>
+    </form>
+
+}
+
+@code {
+
+    private NavigationManager NavigationManager { get; set; }
+
+    List<ModelMI> modelMIs;
+    ModelMI newUser = new ModelMI();
+    bool isCreatingNewUser = false;
+
+   
+    private void LoadData()
+    {
+        modelMIs = DalMI.GetMI().Where(user => user.roles == "user").ToList();
+    }
+
+    private void CreateNewUser()
+    {
+        isCreatingNewUser = true;
+    }
+
+    private void SaveNewUser()
+    {
+        DalMI.SaveUser(newUser);
+        newUser = new ModelMI();
+        isCreatingNewUser = false;
+        LoadData();
+    }
+
+    
+       /*private void EditUser(string userId)
+        {
+            NavigationManager.NavigateTo($"/edituser/{userId}");
+        }*/
+
+    
+
+    private void DeleteUser(string userId)
+    {
+        DalMI.DeleteUser(userId);
+        LoadData();
+    }
+}

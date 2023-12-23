@@ -1,0 +1,79 @@
+﻿@page "/Login"
+@using ModelLayer
+@using DataAccessLayer
+@using UserInterface.Authentication
+@inject UserAccountService userAccountService
+@inject IJSRuntime js
+@inject AuthenticationStateProvider authstateprovider
+@inject NavigationManager nav
+
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-lg-4 offset-lg-4 pt-4 pb-4 border">
+            <div class="mb-3 text-center">
+                <h3>Login to Your Account</h3>
+            </div>
+
+            <div class="mb-3">
+                <label>Username</label>
+                <input @bind="model.username" class="form-control" placeholder="Enter username" />
+            </div>
+
+            <div class="mb-3">
+                <label>Password</label>
+                <input type="password" @bind="model.userpass" class="form-control" placeholder="Enter Password" />
+            </div>
+
+            <div class="mb-3 mt-2">
+                <div class="form-check text-dark">
+                    <input class="form-check-input" type="checkbox" value="remember-me" />
+                    <label class="form-check-label">
+                        Remember me
+                    </label>
+                </div>
+            </div>
+
+            <div class="d-grid gap-2 mb-3">
+                <button @onclick="Authenticate" class="btn btn-dark">Login</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@code {
+    public void Move()
+    {
+        nav.NavigateTo("/createuser", true);
+    }
+    public class Model
+    {
+        public string username { get; set; }
+        public string userpass { get; set; }
+    }
+    public Model model = new Model();
+
+    ModelMI userAccount = new ModelMI();
+
+    public async Task Authenticate()
+    {
+
+        userAccount = await userAccountService.GetByUserName(model.username, model.userpass);
+        if (userAccount.username == null && userAccount.userpass == null)
+        {
+            await js.InvokeVoidAsync("alert", "Incorrect username or passsword");
+            return;
+        };
+
+        var customAuthStateProvider = (CustomAuthenticationStateProvider)authstateprovider;
+        await customAuthStateProvider.UpdateAuthenticationState(new UserSessions
+            {
+                username = userAccount.username,
+                userid = userAccount.userid,
+                roles = userAccount.roles
+            }
+        );
+
+        nav.NavigateTo("/", true);
+    }
+}

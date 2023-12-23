@@ -1,0 +1,115 @@
+﻿@using UserInterface.Authentication
+@inject AuthenticationStateProvider aus
+@inject NavigationManager nm
+@inject IJSRuntime js
+
+@using ModelLayer
+
+<style>
+    .black-bg {
+        background-color: black;
+        color: white; /* You can change text color if needed */
+    }
+</style>
+
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">Multiple Intelligence Survey</a>
+        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+    </div>
+</div>
+
+<div class="nav-scrollable black-bg @NavMenuCssClass" @onclick="ToggleNavMenu">
+    <nav class="flex-column">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <span class="oi oi-home" aria-hidden="true"></span> Home
+            </NavLink>
+        </div>
+
+        <CascadingAuthenticationState>
+            <AuthorizeView Roles="user">
+                <Authorized>
+                    <!-- User-specific navigation links go here -->
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link" href="Survey">
+                            <span class="oi oi-list-rich" aria-hidden="true"></span> Survey
+                        </NavLink>
+                    </div>
+
+                    
+                </Authorized>
+            </AuthorizeView>
+        </CascadingAuthenticationState>
+
+
+        <CascadingAuthenticationState>
+            <AuthorizeView Roles="admin">
+                <Authorized>
+
+
+
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link" href="MI">
+                            <span class="oi oi-list-rich" aria-hidden="true"></span> MI
+                        </NavLink>
+                    </div>
+
+
+
+                    <!-- Admin-specific navigation links go here -->
+                </Authorized>
+            </AuthorizeView>
+        </CascadingAuthenticationState>
+
+        <CascadingAuthenticationState>
+            <AuthorizeView Roles="admin, user">
+
+                <Authorized>
+                    
+                    <NavLink class="nav-link">
+                        <button @onclick="Logout">
+                            Logout
+                        </button>
+                    </NavLink>
+                </Authorized>
+
+                <NotAuthorized>
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link" href="Login">
+                            <span class="oi oi-list-rich" aria-hidden="true"></span> Login
+                        </NavLink>
+                    </div>
+
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link" href="Signup">
+                            <span class="oi oi-list-rich" aria-hidden="true"></span> Signup
+                        </NavLink>
+                    </div>
+                </NotAuthorized>
+            </AuthorizeView>
+        </CascadingAuthenticationState>
+
+        
+
+    </nav>
+</div>
+
+@code {
+    private bool collapseNavMenu = true;
+    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private async Task Logout()
+    {
+        var cas = (CustomAuthenticationStateProvider)aus;
+        await cas.UpdateAuthenticationState(null);
+        nm.NavigateTo("Login");
+    }
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+}

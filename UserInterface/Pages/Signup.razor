@@ -1,0 +1,62 @@
+﻿@page "/Signup"
+@using ModelLayer
+@using DataAccessLayer
+@using UserInterface.Authentication
+@inject IJSRuntime js
+@inject AuthenticationStateProvider authStateProvider
+@inject NavigationManager nav
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-lg-4 offset-lg-4 pt-4 pb-4 border">
+            <div class="mb-3 text-center">
+                <h3>Sign Up for an Account</h3>
+            </div>
+            <div class="mb-3">
+                <label for="userId">User ID</label>
+                <input @bind="UA.userid" id="userId" class="form-control" placeholder="Enter ID" />
+            </div>
+            <div class="mb-3">
+                <label for="username">Username</label>
+                <input @bind="UA.username" id="username" class="form-control" placeholder="Enter username" />
+            </div>
+            <div class="mb-3">
+                <label for="userEmail">Email</label>
+                <input @bind="UA.useremail" id="userEmail" class="form-control" placeholder="Enter email" />
+            </div>
+
+            <div class="mb-3">
+                <label>rolesl</label>
+                <input @bind="UA.roles" class="form-control" placeholder="Enter roles" />
+            </div>
+
+            <div class="mb-3">
+                <label for="userPassword">Password</label>
+                <input @bind="UA.userpass" id="userPassword" type="password" class="form-control" placeholder="Enter Password" />
+            </div>
+            <div class="mb-3 d-grid gap-2">
+                <button @onclick="SignUp" class="btn btn-dark">Sign Up</button>
+            </div>
+            @if (accountCreated)
+            {
+                <div class="alert alert-success" role="alert">
+                    Account successfully created!
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+
+@code {
+    ModelMI UA = new ModelMI();
+    bool accountCreated = false;
+    public async Task SignUp()
+    {
+        // Call the signup method to insert the user into the database
+        DALsignup.InsertUser(UA.userid, UA.username, UA.userpass, UA.useremail, UA.roles);
+
+        accountCreated = true;
+        // Redirect to the home page or any other page after signup
+        nav.NavigateTo("/Login", true);
+    }
+}

@@ -1,0 +1,71 @@
+﻿@page "/surveyresults"
+@using ModelLayer
+@using UserInterface.Data
+@using DataAccessLayer
+@using Microsoft.AspNetCore.Components
+
+
+@attribute [Authorize(Roles = "user")]
+
+<h3>RESULTS</h3>
+
+<button @onclick="LoadData">Show User Data</button>
+
+
+@if (modelSR != null && modelSR.Any())
+{
+    <table class="table">
+        <thead>
+            <tr>
+           
+                <th>User ID</th>
+                <th>Username</th>
+                <th>Percentage</th>
+                <th>category</th>
+         
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in modelSR)
+            {
+                <tr>
+                    <td>@item.userid</td>
+                    <td>@item.username</td>
+                    <td>@item.Percentage</td>
+                    <td>@item.Category</td>
+                  
+                    <td>
+
+                      
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p> </p>
+}
+
+
+
+
+@code {
+
+    private NavigationManager NavigationManager { get; set; }
+
+    List<Modelsurveyresult> modelSR;
+    Modelsurveyresult newUser = new Modelsurveyresult();
+    bool isCreatingNewUser = false;
+
+
+    private void LoadData()
+    {
+        modelSR = DALsurveyresult.Getsurveyresult().ToList();
+    }
+
+
+
+
+}

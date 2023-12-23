@@ -1,0 +1,647 @@
+﻿@page "/Survey"
+@using UserInterface.Data
+@using DataAccessLayer
+@inject IJSRuntime js
+@using UserInterface.Authentication
+@inject AuthenticationStateProvider authstateprovider
+@inject NavigationManager nav
+@using ModelLayer
+@using System.Security.Claims
+@using DataAccessLayer
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@using System.Security.Claims
+@using UserInterface.Data
+@using DataAccessLayer
+@inject NavigationManager NavigationManager
+@inject UserAccountService userAccountService
+@using System.Text.Json
+
+
+
+
+@using ModelLayer
+@attribute [Authorize(Roles = "user")]
+
+<style>
+    .question-container {
+        margin: 20px 0;
+    }
+
+    .question {
+        font-size: 18px;
+        margin: 10px 0;
+    }
+
+    .radio-option {
+        display: flex;
+        align-items: center;
+        margin: 5px 0;
+    }
+
+    .radio-label {
+        font-size: 16px;
+        margin-left: 10px;
+    }
+
+    .submit-button {
+        margin: 20px 0;
+    }
+</style>
+
+<div class="container">
+    <br />
+    <h3>Multiple Intelligence Questionnaire:</h3>
+
+    <h1>Let's get started, @username!</h1>
+
+    <div class="question-container">
+        <div class="question">
+            @SurveyQuestions[currentQuestionIndex].Question
+        </div>
+        @if (!string.IsNullOrEmpty(SurveyQuestions[currentQuestionIndex].UrduQuestion))
+        {
+            <div class="question">
+                @SurveyQuestions[currentQuestionIndex].UrduQuestion
+            </div>
+        }
+        @foreach (var option in SurveyQuestions[currentQuestionIndex].ResponseOptions)
+        {
+            <div class="radio-option">
+                <input type="radio" name="@SurveyQuestions[currentQuestionIndex].Question" value="@option.Score" checked="@option.IsSelected" @onchange="() => UpdateResponse(option, SurveyQuestions[currentQuestionIndex])">
+                <label class="radio-label">@option.OptionText</label>
+            </div>
+        }
+
+    </div>@*
+    <button class="submit-button btn btn-dark" @onclick="SubmitSurvey">Submit Survey</button>
+
+    *@
+
+    <button class="submit-button btn btn-dark" @onclick="NextQuestion">
+        @if (currentQuestionIndex < SurveyQuestions.Count - 1)
+        {
+            <text>Next</text>
+            ;
+        }
+        else
+        {
+            <text>Submit</text>
+            ;
+        }
+    </button>
+
+
+</div>
+
+@if (SurveyCompleted)
+{
+    <div class="container">
+        <h4>Survey Result:</h4>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Percentage</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var category in CategoryPercentages.Keys)
+                {
+                    <tr>
+                        <td>@category</td>
+                        <td>@CategoryPercentages[category]%</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+
+
+@code {
+
+    private int currentQuestionIndex = 0;
+    private string userid;
+
+    private string username = "Guest";
+    private bool userIsAuthenticated = false;
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity.IsAuthenticated)
+        {
+            userid = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            username = user.FindFirst(ClaimTypes.Name)?.Value;
+            userIsAuthenticated = true;
+        }
+    }
+    private List<SurveyQuestion> SurveyQuestions = new List<SurveyQuestion>
+    {
+        new SurveyQuestion
+        {
+            Question = "I like engaging in debates or discussions.",
+            UrduQuestion = "مجھے بحث و مباحثے میں مشغول ہونا پسند ہے۔",
+            Category = "Linguistic Intelligence",
+            ResponseOptions = new List<SurveyResponseOption>
+            {
+                new SurveyResponseOption { OptionText = "Strongly Agree", Score = 5 },
+                new SurveyResponseOption { OptionText = "Agree", Score = 4 },
+                new SurveyResponseOption { OptionText = "Neutral", Score = 3 },
+                new SurveyResponseOption { OptionText = "Disagree", Score = 2 },
+                new SurveyResponseOption { OptionText = "Strongly Disagree", Score = 1 },
+            }
+        },
+
+        new SurveyQuestion
+        {
+            Question = "I am good at learning foreign languages.",
+            UrduQuestion = "میں غیر ملکی زبانیں سیکھنے میں اچھا ہوں۔",
+            Category = "Linguistic Intelligence",
+            ResponseOptions = new List<SurveyResponseOption>
+            {
+                new SurveyResponseOption { OptionText = "Strongly Agree", Score = 5 },
+                new SurveyResponseOption { OptionText = "Agree", Score = 4 },
+                new SurveyResponseOption { OptionText = "Neutral", Score = 3 },
+                new SurveyResponseOption { OptionText = "Disagree", Score = 2 },
+                new SurveyResponseOption { OptionText = "Strongly Disagree", Score = 1 },
+            }
+        },
+
+       new SurveyQuestion
+        {
+            Question = "Using numerical symbols is easy for me. ",
+            UrduQuestion = "عددی علامتوں کا استعمال میرے لیے آسان ہے۔",
+            Category = "Logical-Mathematical Intelligence",
+            ResponseOptions = new List<SurveyResponseOption>
+            {
+                new SurveyResponseOption { OptionText = "Strongly Agree", Score = 5 },
+                new SurveyResponseOption { OptionText = "Agree", Score = 4 },
+                new SurveyResponseOption { OptionText = "Neutral", Score = 3 },
+                new SurveyResponseOption { OptionText = "Disagree", Score = 2 },
+                new SurveyResponseOption { OptionText = "Strongly Disagree", Score = 1 },
+            }
+        },
+
+        new SurveyQuestion
+        {
+            Question = "I have varied musical interest and play multiple musical instruments.",
+            UrduQuestion = " میری موسیقی کی دلچسپی مختلف ہے اور میں متعدد آلات موسیقی بجاتا ہوں۔",
+            Category = "Musical-Rhythmic Intelligence",
+            ResponseOptions = new List<SurveyResponseOption>
+            {
+                new SurveyResponseOption { OptionText = "Strongly Agree", Score = 5 },
+                new SurveyResponseOption { OptionText = "Agree", Score = 4 },
+                new SurveyResponseOption { OptionText = "Neutral", Score = 3 },
+                new SurveyResponseOption { OptionText = "Disagree", Score = 2 },
+                new SurveyResponseOption { OptionText = "Strongly Disagree", Score = 1 },
+            }
+        },
+    @*
+         new SurveyQuestion
+        {
+            Question = "I like solving puzzles and playing board games.",
+            UrduQuestion = " مجھے پہیلیاں حل کرنا اور بورڈ گیمز کھیلنا پسند ہے۔",
+            Category = "Logical-Mathematical Intelligence",
+            ResponseOptions = new List<SurveyResponseOption>
+            {
+                new SurveyResponseOption { OptionText = "Strongly Agree", Score = 5 },
+                new SurveyResponseOption { OptionText = "Agree", Score = 4 },
+                new SurveyResponseOption { OptionText = "Neutral", Score = 3 },
+                new SurveyResponseOption { OptionText = "Disagree", Score = 2 },
+                new SurveyResponseOption { OptionText = "Strongly Disagree", Score = 1 },
+            }
+        },
+
+        new SurveyQuestion
+        {
+            Question = "I use music as an escape from reality.",
+            UrduQuestion = " میں موسیقی کو حقیقت سے فرار کے طور پر استعمال کرتا ہوں۔",
+            Category = "Musical-Rhythmic Intelligence",
+            ResponseOptions = new List<SurveyResponseOption>
+            {
+                new SurveyResponseOption { OptionText = "Strongly Agree", Score = 5 },
+                new SurveyResponseOption { OptionText = "Agree", Score = 4 },
+                new SurveyResponseOption { OptionText = "Neutral", Score = 3 },
+                new SurveyResponseOption { OptionText = "Disagree", Score = 2 },
+                new SurveyResponseOption { OptionText = "Strongly Disagree", Score = 1 },
+            }
+        },
+
+         new SurveyQuestion
+        {
+            Question = "I like examining things to figure out how it works.",
+            UrduQuestion = " مجھے یہ معلوم کرنے کے لیے چیزوں کی جانچ کرنا پسند ہے کہ یہ کیسے کام کرتی ہے۔",
+            Category = "Logical-Mathematical Intelligence",
+            ResponseOptions = new List<SurveyResponseOption>
+            {
+                new SurveyResponseOption { OptionText = "Strongly Agree", Score = 5 },
+                new SurveyResponseOption { OptionText = "Agree", Score = 4 },
+                new SurveyResponseOption { OptionText = "Neutral", Score = 3 },
+                new SurveyResponseOption { OptionText = "Disagree", Score = 2 },
+                new SurveyResponseOption { OptionText = "Strongly Disagree", Score = 1 },
+            }
+        },
+         new SurveyQuestion
+        {
+            Question = "I am skilled in sports or physical activities. ",
+            UrduQuestion = "میں کھیلوں یا جسمانی سرگرمیوں میں ماہر ہوں۔",
+            Category = "Bodily-Kinesthetic Intelligence",
+            ResponseOptions = new List<SurveyResponseOption>
+            {
+                new SurveyResponseOption { OptionText = "Strongly Agree", Score = 5 },
+                new SurveyResponseOption { OptionText = "Agree", Score = 4 },
+                new SurveyResponseOption { OptionText = "Neutral", Score = 3 },
+                new SurveyResponseOption { OptionText = "Disagree", Score = 2 },
+                new SurveyResponseOption { OptionText = "Strongly Disagree", Score = 1 },
+            }
+        },
+
+        new SurveyQuestion
+        {
+            Question = "I like puns and rhymes.",
+            UrduQuestion = " مجھے نظمیں پسند ہیں۔",
+            Category = "Musical-Rhythmic Intelligence",
+            ResponseOptions = new List<SurveyResponseOption>
+            {
+                new SurveyResponseOption { OptionText = "Strongly Agree", Score = 5 },
+                new SurveyResponseOption { OptionText = "Agree", Score = 4 },
+                new SurveyResponseOption { OptionText = "Neutral", Score = 3 },
+                new SurveyResponseOption { OptionText = "Disagree", Score = 2 },
+                new SurveyResponseOption { OptionText = "Strongly Disagree", Score = 1 },
+            }
+        },
+
+        new SurveyQuestion
+        {
+            Question = "I find it easy to remember telephone numbers.",
+            UrduQuestion = " مجھے ٹیلی فون نمبر یاد رکھنا آسان لگتا ہے۔",
+            Category = "Logical-Mathematical Intelligence",
+            ResponseOptions = new List<SurveyResponseOption>
+            {
+                new SurveyResponseOption { OptionText = "Strongly Agree", Score = 5 },
+                new SurveyResponseOption { OptionText = "Agree", Score = 4 },
+                new SurveyResponseOption { OptionText = "Neutral", Score = 3 },
+                new SurveyResponseOption { OptionText = "Disagree", Score = 2 },
+                new SurveyResponseOption { OptionText = "Strongly Disagree", Score = 1 },
+            }
+        },
+
+        new SurveyQuestion
+  {
+      Question = "I can understand and manage my own emotions and those of others.",
+      UrduQuestion = "  میں  اپنے اور دوسروں کے جذبات کو  اچھی طرح سمجھ سکتےa ہیں اور ان کا نظم کر سکتے ہیں",
+      Category = "Emotional Intelligence",
+      ResponseOptions = new List<SurveyResponseOption>
+      {
+          new SurveyResponseOption { OptionText = "Strongly Agree", Score = 5 },
+          new SurveyResponseOption { OptionText = "Agree", Score = 4 },
+          new SurveyResponseOption { OptionText = "Neutral", Score = 3 },
+          new SurveyResponseOption { OptionText = "Disagree", Score = 2 },
+          new SurveyResponseOption { OptionText = "Strongly Disagree", Score = 1 },
+      }
+  },
+
+         new SurveyQuestion
+        {
+            Question = "I can easily mimic physical movements or gestures.",
+            UrduQuestion = "میں آسانی سے جسمانی حرکات یا اشاروں کی نقل کر سکتا ہوں۔",
+            Category = "Bodily-Kinesthetic Intelligence",
+            ResponseOptions = new List<SurveyResponseOption>
+            {
+                new SurveyResponseOption { OptionText = "Strongly Agree", Score = 5 },
+                new SurveyResponseOption { OptionText = "Agree", Score = 4 },
+                new SurveyResponseOption { OptionText = "Neutral", Score = 3 },
+                new SurveyResponseOption { OptionText = "Disagree", Score = 2 },
+                new SurveyResponseOption { OptionText = "Strongly Disagree", Score = 1 },
+            }
+        },
+
+        new SurveyQuestion
+        {
+            Question = " I am self-aware  of my own emotions and thoughts.",
+            UrduQuestion = " میں اپنے جذبات اور خیالات سے خود آگاہ ہوں۔",
+            Category = "Intrapersonal Intelligence",
+            ResponseOptions = new List<SurveyResponseOption>
+            {
+                new SurveyResponseOption { OptionText = "Strongly Agree", Score = 5 },
+                new SurveyResponseOption { OptionText = "Agree", Score = 4 },
+                new SurveyResponseOption { OptionText = "Neutral", Score = 3 },
+                new SurveyResponseOption { OptionText = "Disagree", Score = 2 },
+                new SurveyResponseOption { OptionText = "Strongly Disagree", Score = 1 },
+            }
+        },
+
+           new SurveyQuestion
+  {
+      Question = "I am often aware of the emotional dynamics in my relationships and I am able to navigate them effectively.",
+
+      UrduQuestion = " کیا آپ اکثر اپنے تعلقات میں جذباتی حرکیات سے واقف ہیں اور ان کو مؤثر طریقے سے نیویگیٹ کرنے کے قابل ہیں؟",
+      Category = "Emotional Intelligence",
+      ResponseOptions = new List<SurveyResponseOption>
+      {
+          new SurveyResponseOption { OptionText = "Strongly Agree", Score = 5 },
+          new SurveyResponseOption { OptionText = "Agree", Score = 4 },
+          new SurveyResponseOption { OptionText = "Neutral", Score = 3 },
+          new SurveyResponseOption { OptionText = "Disagree", Score = 2 },
+          new SurveyResponseOption { OptionText = "Strongly Disagree", Score = 1 },
+      }
+  },
+
+        new SurveyQuestion
+
+    {
+     Question = "I am comfortable in social situations and working with others in a group.",
+     UrduQuestion = " میں سماجی حالات میں آرام دہ ہیں اور گروپ میں دوسروں کے ساتھ کام کرتے ہیں",
+     Category = "Interpersonal Intelligence",
+     ResponseOptions = new List<SurveyResponseOption>
+     {
+         new SurveyResponseOption { OptionText = "Strongly Agree", Score = 5 },
+         new SurveyResponseOption { OptionText = "Agree", Score = 4 },
+         new SurveyResponseOption { OptionText = "Neutral", Score = 3 },
+         new SurveyResponseOption { OptionText = "Disagree", Score = 2 },
+         new SurveyResponseOption { OptionText = "Strongly Disagree", Score = 1 },
+     }
+ },
+
+        new SurveyQuestion
+        {
+            Question = "I often have a song or a piece of music in my head.",
+            UrduQuestion = " میرے سر میں اکثر کوئی گانا یا موسیقی کا ٹکڑا ہوتا ہے۔",
+            Category = "Musical-Rhythmic Intelligence",
+            ResponseOptions = new List<SurveyResponseOption>
+            {
+                new SurveyResponseOption { OptionText = "Strongly Agree", Score = 5 },
+                new SurveyResponseOption { OptionText = "Agree", Score = 4 },
+                new SurveyResponseOption { OptionText = "Neutral", Score = 3 },
+                new SurveyResponseOption { OptionText = "Disagree", Score = 2 },
+                new SurveyResponseOption { OptionText = "Strongly Disagree", Score = 1 },
+            }
+        },
+
+         new SurveyQuestion
+        {
+            Question = " I can easily set personal goals and reflect on my own experiences.",
+            UrduQuestion = " میں آسانی سے ذاتی اہداف طے کرسکتا ہوں اور اپنے تجربات پر غور کرسکتا ہوں۔",
+            Category = "Intrapersonal Intelligence",
+            ResponseOptions = new List<SurveyResponseOption>
+            {
+                new SurveyResponseOption { OptionText = "Strongly Agree", Score = 5 },
+                new SurveyResponseOption { OptionText = "Agree", Score = 4 },
+                new SurveyResponseOption { OptionText = "Neutral", Score = 3 },
+                new SurveyResponseOption { OptionText = "Disagree", Score = 2 },
+                new SurveyResponseOption { OptionText = "Strongly Disagree", Score = 1 },
+            }
+        },
+
+         new SurveyQuestion
+        {
+            Question = " I am observant of natural patterns, such as changes in the weather or animal behaviors.",
+            UrduQuestion = " میں قدرتی نمونوں کا مشاہدہ کرتا ہوں، جیسے موسم میں تبدیلی یا جانوروں کے رویے۔",
+            Category = "Naturalistic Intelligence",
+            ResponseOptions = new List<SurveyResponseOption>
+            {
+                new SurveyResponseOption { OptionText = "Strongly Agree", Score = 5 },
+                new SurveyResponseOption { OptionText = "Agree", Score = 4 },
+                new SurveyResponseOption { OptionText = "Neutral", Score = 3 },
+                new SurveyResponseOption { OptionText = "Disagree", Score = 2 },
+                new SurveyResponseOption { OptionText = "Strongly Disagree", Score = 1 },
+            }
+        },
+
+        new SurveyQuestion
+ {
+     Question = "I am good  at visualizing objects and spaces in my mind.",
+     UrduQuestion = " آپ اپنے دماغ میں اشیاء اور خالی جگہوں کو دیکھنے میں کتنے اچھے ہیں؟",
+     Category = "Spatial Intelligence",
+     ResponseOptions = new List<SurveyResponseOption>
+     {
+         new SurveyResponseOption { OptionText = "Strongly Agree", Score = 5 },
+         new SurveyResponseOption { OptionText = "Agree", Score = 4 },
+         new SurveyResponseOption { OptionText = "Neutral", Score = 3 },
+         new SurveyResponseOption { OptionText = "Disagree", Score = 2 },
+         new SurveyResponseOption { OptionText = "Strongly Disagree", Score = 1 },
+     }
+ },
+
+          new SurveyQuestion
+        {
+            Question = " I am  interested in environmental issues and sustainability.",
+            UrduQuestion = " میں ماحولیاتی مسائل اور پائیداری میں دلچسپی رکھتا ہوں۔",
+            Category = "Naturalistic Intelligence",
+            ResponseOptions = new List<SurveyResponseOption>
+            {
+                new SurveyResponseOption { OptionText = "Strongly Agree", Score = 5 },
+                new SurveyResponseOption { OptionText = "Agree", Score = 4 },
+                new SurveyResponseOption { OptionText = "Neutral", Score = 3 },
+                new SurveyResponseOption { OptionText = "Disagree", Score = 2 },
+                new SurveyResponseOption { OptionText = "Strongly Disagree", Score = 1 },
+            }
+        },
+
+         new SurveyQuestion
+        {
+            Question = " I often contemplate questions about the meaning of life and the universe.",
+            UrduQuestion = " میں اکثر زندگی اور کائنات کے معنی کے بارے میں سوالات پر غور کرتا ہوں۔",
+            Category = "Existential Intelligence ",
+            ResponseOptions = new List<SurveyResponseOption>
+            {
+                new SurveyResponseOption { OptionText = "Strongly Agree", Score = 5 },
+                new SurveyResponseOption { OptionText = "Agree", Score = 4 },
+                new SurveyResponseOption { OptionText = "Neutral", Score = 3 },
+                new SurveyResponseOption { OptionText = "Disagree", Score = 2 },
+                new SurveyResponseOption { OptionText = "Strongly Disagree", Score = 1 },
+            }
+        },
+
+        new SurveyQuestion
+ {
+     Question = "It is easy for me to give and follow directions on a map or navigate in unfamiliar places.",
+     UrduQuestion = "میرے لیے نقشے پر ہدایات دینا اور ان کی پیروی کرنا یا غیر مانوس جگہوں پر تشریف لانا آسان ہے۔",
+     Category = "Spatial Intelligence",
+     ResponseOptions = new List<SurveyResponseOption>
+     {
+         new SurveyResponseOption { OptionText = "Strongly Agree", Score = 5 },
+         new SurveyResponseOption { OptionText = "Agree", Score = 4 },
+         new SurveyResponseOption { OptionText = "Neutral", Score = 3 },
+         new SurveyResponseOption { OptionText = "Disagree", Score = 2 },
+         new SurveyResponseOption { OptionText = "Strongly Disagree", Score = 1 },
+     }
+ },
+
+ new SurveyQuestion
+ {
+     Question = "I  have a strong ability to empathize and understand the emotions of others.",
+     UrduQuestion = " مجھ میں دوسروں کے جذبات کو سمجھنے اور ہمدردی کرنے کی مضبوط صلاحیت ہے؟",
+     Category = "Interpersonal Intelligence",
+     ResponseOptions = new List<SurveyResponseOption>
+     {
+         new SurveyResponseOption { OptionText = "Strongly Agree", Score = 5 },
+         new SurveyResponseOption { OptionText = "Agree", Score = 4 },
+         new SurveyResponseOption { OptionText = "Neutral", Score = 3 },
+         new SurveyResponseOption { OptionText = "Disagree", Score = 2 },
+         new SurveyResponseOption { OptionText = "Strongly Disagree", Score = 1 },
+     }
+ },*@
+
+    new SurveyQuestion
+        {
+            Question = " I have a strong sense of purpose or a personal philosophy that guides your life.",
+            UrduQuestion = " میرے پاس مقصد یا ذاتی فلسفہ کا مضبوط احساس ہے جو آپ کی زندگی کی رہنمائی کرتا ہے۔",
+            Category = "Existential Intelligence ",
+            ResponseOptions = new List<SurveyResponseOption>
+            {
+                new SurveyResponseOption { OptionText = "Strongly Agree", Score = 5 },
+                new SurveyResponseOption { OptionText = "Agree", Score = 4 },
+                new SurveyResponseOption { OptionText = "Neutral", Score = 3 },
+                new SurveyResponseOption { OptionText = "Disagree", Score = 2 },
+                new SurveyResponseOption { OptionText = "Strongly Disagree", Score = 1 },
+            }
+        },
+
+    };
+
+    private List<UserSurveyResponse> UserResponses = new List<UserSurveyResponse>();
+    private Dictionary<string, decimal> CategoryScores = new Dictionary<string, decimal>();
+    private Dictionary<string, decimal> CategoryPercentages = new Dictionary<string, decimal>();
+    private bool SurveyCompleted = false;
+
+    private class UserSurveyResponse
+    {
+        public string Question { get; set; }
+        public int Score { get; set; }
+        public string UrduQuestion { get; set; }
+    }
+
+    private void UpdateResponse(SurveyResponseOption option, SurveyQuestion question)
+    {
+        var response = UserResponses.Find(r => r.Question == question.Question);
+
+        if (response == null)
+        {
+            UserResponses.Add(new UserSurveyResponse { Question = question.Question, Score = option.Score });
+        }
+        else
+        {
+            response.Score = option.Score;
+        }
+
+        // Update the IsSelected property
+        option.IsSelected = true;
+    }
+
+
+    private void NextQuestion()
+    {
+
+
+        if (currentQuestionIndex < SurveyQuestions.Count - 1)
+        {
+            currentQuestionIndex++;
+
+
+        }
+        else
+        {
+            CalculateCategoryScores();
+            CalculateCategoryPercentages();
+            var selectedCategory = CategoryPercentages.OrderByDescending(x => x.Value).FirstOrDefault().Key;
+            SurveyCompleted = true;
+            nav.NavigateTo("/SurveyResults");
+          
+        }
+
+        // Save the survey results to the database
+        SaveSurveyResults();
+
+       
+    }
+
+
+    private void SubmitSurvey()
+    {
+
+        CalculateCategoryScores();
+        CalculateCategoryPercentages();
+        var selectedCategory = CategoryPercentages.OrderByDescending(x => x.Value).FirstOrDefault().Key;
+        SurveyCompleted = true;
+        // Save the survey results to the database
+        SaveSurveyResults();
+
+
+       
+    }
+
+    private void CalculateCategoryScores()
+    {
+        CategoryScores.Clear();
+
+        foreach (var question in SurveyQuestions)
+        {
+            var response = UserResponses.Find(r => r.Question == question.Question);
+            if (response != null)
+            {
+                var category = question.Category;
+                if (CategoryScores.ContainsKey(category))
+                {
+                    CategoryScores[category] += response.Score;
+                }
+                else
+                {
+                    CategoryScores[category] = response.Score;
+                }
+            }
+        }
+    }
+
+    private void CalculateCategoryPercentages()
+    {
+        decimal totalScore = CategoryScores.Values.Sum();
+        CategoryPercentages.Clear();
+
+        foreach (var category in CategoryScores.Keys)
+        {
+            var percentage = (decimal)CategoryScores[category] / totalScore * 100;
+            CategoryPercentages[category] = percentage;
+        }
+    }
+    ModelMI MII = new ModelMI();
+
+    private void SaveSurveyResults()
+    {
+
+
+
+
+
+
+
+        foreach (var category in CategoryPercentages.Keys)
+        {
+            var percentage = CategoryPercentages[category];
+
+
+            var surveyResult = new Modelsurveyresult
+                {
+                    userid = userid,
+                    username = username,
+                    Category = category,
+                    Percentage = percentage
+                };
+
+
+
+
+            DALsurveyresult.Insertresponse(surveyResult.userid, surveyResult.username, surveyResult.Category, surveyResult.Percentage);
+
+
+
+        }
+
+
+    }
+
+}

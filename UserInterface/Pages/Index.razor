@@ -1,0 +1,123 @@
+﻿@page "/"
+
+
+
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@using System.Security.Claims
+@using UserInterface.Data
+@using DataAccessLayer
+@inject NavigationManager NavigationManager
+
+ 
+<div class="container mt-5">
+    @if (userIsAuthenticated)
+    {
+        <AuthorizeView Roles="user">
+            <Authorized>
+                <div class="container mt-5">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <style>
+                                .my-custom-spacing {
+                                    margin-top: 300px; /* Adjust the margin-top value as needed */
+                                }
+                            </style>
+                            <h1 class="display-4">Hello, @username!</h1>
+                            <p>Take this survey to understand the many ways and concepts to measure your intelligence. Explore the Theory of Multiple Intelligences and find out your strengths.</p>
+
+                            <h2>What is Gardner’s Theory of Multiple Intelligences?</h2>
+                            <p>
+                                Gardner’s Theory of Multiple Intelligences divides human intelligence into eight different types, rather than a single ability. It emphasizes the importance of tailoring the learning process to an individual's strengths in their multiple intelligences.
+                            </p>
+                        </div>
+                        <div class="col-md-4">
+                            <!-- Add an image or visual element here if desired -->
+                        </div>
+                    </div>
+
+                    <!-- Button for starting the survey -->
+                    <div class="row mt-4">
+                        <div class="col-md-8">
+                            <button @onclick="StartSurvey" class="btn btn-dark">Start Survey</button>
+                        </div>
+                    </div>
+                </div>
+            </Authorized>
+            <NotAuthorized>
+                <h1 class="display-4">Hello, @username!</h1>
+                <p>Click to view user information:</p>
+                <div class="col-md-8">
+                <button @onclick="Userinformation" class="btn btn-dark">User Information</button>
+                </div>
+
+
+            </NotAuthorized>
+        </AuthorizeView>
+    }
+    else
+    {
+        <div class="row">
+            <div class="col-md-8">
+                <h1 class="display-4">Empower Your Learning Capabilities</h1>
+                <h2>Sign up now to get started!</h2>
+                <p>We believe in the power of understanding your unique strengths. Join us and explore the Theory of Multiple Intelligences to enhance your problem-solving skills and intelligence.</p>
+                <button @onclick="NavigateToSignUp" class="btn btn-dark">Sign Up</button>
+            </div>
+            <div class="col-md-4 my-custom-spacing">
+                <style>
+                    .my-custom-spacing {
+                        margin-top: 300px; /* Adjust the margin-top value as needed */
+                    }
+                </style>
+                <h4>Login if you already have an account.</h4>
+                <p>Discover new ways to boost your learning capabilities with Gardner’s Theory of Multiple Intelligences. Whether it's puzzles, games, or real-world challenges, intelligence plays a crucial role in your success.</p>
+                <button @onclick="NavigateToLogin" class="btn btn-dark mt-2">Login</button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+
+    public async Task NavigateToSignUp()
+    {
+        // Navigate to the "Signup" page
+        NavigationManager.NavigateTo("/Signup");
+    }
+
+    public async Task NavigateToLogin()
+    {
+        // Navigate to the "Login" page
+        NavigationManager.NavigateTo("/Login");
+    }
+
+    public async Task StartSurvey()
+    {
+        // Navigate to the "Login" page
+        NavigationManager.NavigateTo("/Survey");
+    }
+
+    public async Task Userinformation()
+    {
+        // Navigate to the "Login" page
+        NavigationManager.NavigateTo("/MI");
+    }
+    private string username = "Guest";
+    private bool userIsAuthenticated = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity.IsAuthenticated)
+        {
+            username = user.FindFirst(ClaimTypes.Name)?.Value;
+            userIsAuthenticated = true;
+        }
+    }
+
+
+
+}
